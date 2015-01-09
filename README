@@ -1,3 +1,6 @@
+purisc-simulator-basic
+	Simulates the output and memory contents of a purisc processor, omitting the details of the pipeline (like data hazards, forwarding, mispredicted branches and flushing, etc...)
+
 This is shit code, but it works.
 
 TO COMPILE:
