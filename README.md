@@ -3,10 +3,10 @@ Simulates the output and memory contents of a purisc processor, omitting the det
 
 This is shit code, but it works.
 
-## TO COMPILE:
+### Compiling
         > make
 
-## USAGE:
+### Usage
         ./simulator_basic file1 [file2]
         
 For one-file operation, file must be a list of values in memory 
@@ -17,7 +17,7 @@ For two-file operation, file1 is the program memory (program assumes
 memory starts at address zero) and file2 is the data memory. Data memory
 must include addresses since the cpu doesn't know where it starts. 
         
-### OPTIONS:
+### Options
     -l LIMIT
         stop the execution after LIMIT cycles
 

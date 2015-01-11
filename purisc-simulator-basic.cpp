@@ -1,57 +1,62 @@
 #include <iostream>
-#include <string>
+#include <sstream>
 #include <stdlib.h>
 #include <vector>
-#define VERBOSE 1
+#include "purisc-simulator-basic.hpp"
 
 using namespace std;
-
-
-class Simulation {
-        private:
-                int limit;
-                vector<int> m;
-                
-        public:
-                Simulation(vector<int> memory, int execLimit) 
-                        {m=memory;limit=execLimit;};
-                void run();
-};
-
-void Simulation::run() {
-
-cout << "simulator's mem:" << endl;
-int disp_address = 0;
-for(vector<int>::iterator vi = m.begin(); vi != m.end(); vi++) {
-    cout << disp_address << "\t" <<  *vi << endl;
-    disp_address++;
+/*
+options:
+    --pc            show pc
+    --decoded       show decoded instructions
+    --resolved      show resolved pointers a and b
+    --show-writes   show result (value written)
+    --write-regs    show only writes to register(s) #
+*/
+Simulation::Simulation(vector<int> memory, PSBArg opts)
+{
+    int pc=0; 
+    int count=0;
+    m=memory;
+    args = opts;
 }
-
-        //loop through instructions, count cycles w/ c
-        for(int pc=0, c=0; pc < m.size() && c < limit; c++) 
-        {
-                cout << "pc:" << pc << endl;
-                //readability
-                int &a = m[pc+0], &b = m[pc+1], &c=m[pc+2];
-                cout << "a:" << a << "\tb:" << b << "\tc:" << c << endl;
-                cout << "m[a]:" << m[a] << "\tm[b]:" << m[b] << "\tm[c]:" 
-                        << m[c] << endl;
-                
-                //subleq
-                if( (m[b]=m[b]-m[a]) <= 0 ) pc = c;
-                else pc += 3;
-        }
+bool
+Simulation::next() 
+{
+    bool success;
+    if(pc < m.size() && count < args.execLimit){
+        a = m[pc+0]; 
+        b = m[pc+1];
+        c = m[pc+2];
+        //subleq
+        if( (m[b]=m[b]-m[a]) <= 0 ) pc = c;
+        else pc += 3;
+        success = true;
+    } else {
+        success = false;
+    }
+    count++;
+    return success;
 }
+int Simulation::getPC() { return pc; }
+int Simulation::getA() { return a; }
+int Simulation::getB() { return b; }
+int Simulation::getC() { return c; }
+int Simulation::getDA(){ return m[a]; }
+int Simulation::getDB(){ return m[b]; }
+int Simulation::getDC(){ return m[c]; }
 
-//returns memory size. allocates and populates memory vector
-vector<int>
-parseMemory(char * fname);
-vector<int>
-parseMemory(char * fname1, char * fname2);
+// TODO: this
+string 
+instWrite(int * addresses, int length)
+{
+    return "not implemented";
+}
 
 int 
-main(int argc, char* argv[]) 
+main(int argc, char** argv) 
 {
+/*
         //memory
         vector<int> m;
         
@@ -87,9 +92,28 @@ main(int argc, char* argv[])
                         fprintf(stderr, "FUCK\n");
                 }
         }
+*/
+        
+        PSBArg args = toPSBArg(argc, argv);
+        vector<int> m;
+        if(args.oneFile)
+            m = parseMemory(args.fileName[0]);
+        else
+            m = parseMemory(args.fileName[0], args.fileName[1]);
 
-        Simulation sim(m, execLimit);
-        sim.run();
+        Simulation * sim = new Simulation(m, args);
+        
+        do {
+            if(args.instAddr) cout << sim->getPC() << endl;
+            if(args.instDecoded) cout << "a:" << sim->getA()
+                                    << "\tb:" << sim->getB()
+                                    << "\tc:" << sim->getC() << endl;
+            if(args.instData) cout << "m[a]:" << sim->getDA() 
+                                << "\tm[b]:" << sim->getDB()
+                                << "\tm[c]:" << sim->getDC() << endl;
+            if(args.instWrite) cout << "addr:" << sim->getB()
+                                    << "data:" << sim->getDB() << endl;
+        } while ( sim->next() );
         
         return 0;
 }
@@ -137,45 +161,4 @@ parseMemory(char * fname1, char * fname2)
         
         return memory;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
