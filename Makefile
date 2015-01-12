@@ -1,2 +1,2 @@
 all: 
-	g++ -std=c++0x -o purisc-simulator-basic purisc-simulator-basic.cpp args.cpp Simulation.cpp
+	g++ -std=c++0x -o purisc-simulator-basic purisc-simulator-basic.cpp Simulation.cpp

@@ -1,20 +1,19 @@
 #include "Simulation.hpp"
 
 using namespace std;
-Simulation::Simulation(
-    vector<int> memory, 
-    PSBArg opts)
+Simulation::Simulation(vector<int> memory, int execLimit)
 {
     int pc=0; 
     int count=0;
     m=memory;
-    args = opts;
+    execLimit = execLimit;
 }
+
 bool
 Simulation::next() 
 {
     bool success;
-    if(pc < m.size() && (count < args.execLimit || execLimit < 0)){
+    if(pc < m.size() && (count < execLimit || execLimit < 0)){
         a = m[pc+0];
         b = m[pc+1];
         c = m[pc+2];
