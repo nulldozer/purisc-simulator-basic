@@ -1,55 +1,41 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <getopt.h>
-#include "purisc-simulator-basic.hpp"
-
-/* Flag set by ‘--verbose’. */
-static int verbose_flag;
-
-/*
-options:
-    --pc            show pc
-    --decoded       show decoded instructions
-    --resolved      show resolved pointers a and b
-    --show-writes   show result (value written)
-    --write-regs    show only writes to register(s) #
-*/
+#include "Simulation.hpp"
 
 PSBArg
 toPSBArg (int argc, char **argv)
 {
-    
+    //default values
     PSBArg args;
-    args.instAddr = 1;
-    args.instDecoded = 1;
-    args.instData = 1;
-    args.instWrite = 1;
+    args.instAddr = false;
+    args.instDecoded = false;
+    args.instData = false;
+    args.instWrite = false;
     args.instrWriteRegister = -1;
     args.oneFile = true;
     args.fileName[0] = "input.machine";
+    args.execLimit = -1;
+    int argCount = 0;
     int c;
 
+
     while (1)
-    {   
+    {
         static struct option long_options[] =
         {
-            /* These options set a flag. */
-            {"verbose", no_argument,       &verbose_flag, 1},
-            {"brief",   no_argument,       &verbose_flag, 0},
-            /* These options don’t set a flag.
-            We distinguish them by their indices. */
-            {"add",     no_argument,       0, 'a'},
-            {"append",  no_argument,       0, 'b'},
-            {"delete",  required_argument, 0, 'd'},
-            {"create",  required_argument, 0, 'c'},
-            {"file",    required_argument, 0, 'f'},
+            {"limit",           required_argument,  0, 'l'},
+            {"show-pc",         no_argument,        0, 'p'},
+            {"show-decoded",    no_argument,        0, 'd'},
+            {"show-resolved",   no_argument,        0, 'r'},
+            {"show-writes",     no_argument,        0, 'w'},
+            {"writes-location", required_argument,  0, 'g'},
             {0, 0, 0, 0}
         };
         /* getopt_long stores the option index here. */
         int option_index = 0;
 
-        c = getopt_long (argc, argv, "abc:d:f:",
-        long_options, &option_index);
+        c = getopt_long(argc, argv, "f:l:pdrwg:", long_options, &option_index);
 
         /* Detect the end of the options. */
         if (c == -1)
@@ -57,36 +43,34 @@ toPSBArg (int argc, char **argv)
 
         switch (c)
         {
-            case 0:
-                /* If this option set a flag, do nothing else now. */
-                if (long_options[option_index].flag != 0)
-                    break;
-                printf ("option %s", long_options[option_index].name);
-                if (optarg)
-                    printf (" with arg %s", optarg);
-                printf ("\n");
+            case 'l':
+                args.execLimit = atoi(optarg);
+                argCount+=2;
                 break;
 
-            case 'a':
-                puts ("option -a\n");
-                break;
-
-            case 'b':
-                puts ("option -b\n");
-                break;
-
-            case 'c':
-                printf ("option -c with value '%s'\n", optarg);
+            case 'p':
+                args.instAddr = true;
+                argCount++;
                 break;
 
             case 'd':
-                printf ("option -d with value '%s'\n", optarg);
+                args.instDecoded = true;
+                argCount++;
                 break;
 
-            case 'f':
-                printf ("option -f with value '%s'\n", optarg);
+            case 'r':
+                args.instData = true;
+                argCount++;
                 break;
 
+            case 'w':
+                args.instWrite = true;
+                argCount++;
+                break;
+            case 'g':
+                args.instrWriteRegister = atoi(optarg);
+                argCount+=2;
+                break;
             case '?':
                 /* getopt_long already printed an error message. */
                 break;
@@ -95,6 +79,19 @@ toPSBArg (int argc, char **argv)
             abort ();
         }
     }
+    
+    
+    if(argc-argCount == 2) {
+        args.oneFile = true;
+        args.fileName[0] = argv[argc-1];
+    } else {
+        args.oneFile = false;
+        args.fileName[0] = argv[argc-2];
+        args.fileName[1] = argv[argc-1];
+    }
+    
+    printf("oneFile = %d\n", args.oneFile);
+    
     return args;
 }
 
