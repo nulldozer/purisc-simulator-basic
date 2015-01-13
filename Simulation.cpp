@@ -1,12 +1,14 @@
 #include "Simulation.hpp"
+//TEMP
+#include <iostream>
 
 using namespace std;
-Simulation::Simulation(vector<int> memory, int execLimit)
+Simulation::Simulation(vector<int> memory, int limit)
 {
-    int pc=0; 
-    int count=0;
+    pc=0; 
+    count=0;
     m=memory;
-    execLimit = execLimit;
+    execLimit=limit;
 }
 
 bool
