@@ -1,7 +1,9 @@
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <stdlib.h>
 #include <getopt.h>
+#include <exception>
 #include "purisc-simulator-basic.hpp"
 
 
@@ -12,11 +14,19 @@ main(int argc, char** argv)
 {
         PSBArg args = toPSBArg(argc, argv);
         vector<int> m;
-        if(args.oneFile)
-            m = parseMemory(args.fileName[0]);
-        else
-            m = parseMemory(args.fileName[0], args.fileName[1]);
-
+        try {
+            if(args.oneFile)
+                m = parseMemory(args.fileName[0]);
+            else
+                m = parseMemory(args.fileName[0], args.fileName[1], 
+                        args.dataMemOffset);
+        } catch(int e) {
+            if(e == 0)
+                cerr << "Error reading memory file" << endl;
+            else if(e == 1)
+                cerr << "Data memory offset too small" << endl;
+            exit(EXIT_FAILURE);
+        } 
         Simulation * sim = new Simulation(m, args.execLimit);
         
         do {
@@ -46,6 +56,7 @@ toPSBArg (int argc, char **argv)
     args.instWrite = false;
     args.instrWriteRegister = -1;
     args.execLimit = -1;
+    args.dataMemOffset = -1;
     int argCount = 0;
     int c;
 
@@ -55,6 +66,7 @@ toPSBArg (int argc, char **argv)
         static struct option long_options[] =
         {
             {"limit",           required_argument,  0, 'l'},
+            {"data-offset",     required_argument,  0, 'o'},
             {"show-pc",         no_argument,        0, 'p'},
             {"show-decoded",    no_argument,        0, 'd'},
             {"show-resolved",   no_argument,        0, 'r'},
@@ -65,7 +77,7 @@ toPSBArg (int argc, char **argv)
         /* getopt_long stores the option index here. */
         int option_index = 0;
 
-        c = getopt_long(argc, argv, "f:l:pdrwg:", long_options, &option_index);
+        c = getopt_long(argc, argv, "l:o:pdrwg:", long_options, &option_index);
 
         /* Detect the end of the options. */
         if (c == -1)
@@ -77,7 +89,12 @@ toPSBArg (int argc, char **argv)
                 args.execLimit = atoi(optarg);
                 argCount+=2;
                 break;
-
+                
+            case 'o':
+                args.dataMemOffset = atoi(optarg);
+                argCount+=2;
+                break;
+                
             case 'p':
                 args.instAddr = true;
                 argCount++;
@@ -114,6 +131,9 @@ toPSBArg (int argc, char **argv)
     if(argc-argCount == 2) {
         args.oneFile = true;
         args.fileName[0] = argv[argc-1];
+    } else if (argc-argCount == 3 && args.dataMemOffset < 0) {
+        cerr << "Two file operation: specify data memory offset with -o or --data-offset" << endl;
+        exit(EXIT_FAILURE);
     } else if (argc-argCount == 3){
         args.oneFile = false;
         args.fileName[0] = argv[argc-2];
@@ -129,48 +149,45 @@ toPSBArg (int argc, char **argv)
 vector<int>
 parseMemory(char * fname)
 {
-        vector<int> memory;
-        FILE * txtFile = fopen(fname,"r");
-        int valueRead;
-        for(int i = 0; fscanf(txtFile,"%i",&valueRead) != EOF; i++)
-                memory.push_back(valueRead);
-        fclose(txtFile);
-        
-        return memory;
+    vector<int> memory;
+    
+    string line;
+    ifstream file;
+    file.open(fname);
+    if(file.fail()) throw(0);
+    
+    while ( getline(file, line) ) {
+        if(!file.eof()){
+            try {
+                memory.push_back( stoi(line) );
+            } catch (int se) {
+                cerr << "Machine code parsing error" << endl;
+            }
+        }
+    }
+    file.close();
+    return memory;
 }
 
 vector<int>
-parseMemory(char * fname1, char * fname2)
+parseMemory(char * fname1, char * fname2, int dataMemOffset)
 {
-        vector<int> memory;
-        FILE * pmFile = fopen(fname1,"r");
-        FILE * dmFile = fopen(fname2,"r");
-        if(pmFile == NULL || dmFile == NULL) {
-            fprintf(stderr, "Couldn't open file\n");
-            abort();
-        }
-        int valueRead;
-        
-        //read in the first address of data memory
-        fscanf(dmFile,"%i",&valueRead);
-        int dataMemStart = valueRead;
-        
-        //populate program memory
-        for(int i = 0; fscanf(pmFile,"%i",&valueRead) != EOF; i++)
-                memory.push_back(valueRead);
-        //offset the data mem
-        for(int i = memory.size(); i < dataMemStart; i++)
-                memory.push_back(0);
-        //populate data memory
-        bool isAddress = true;
-        for(int i = dataMemStart; fscanf(dmFile,"%i",&valueRead) != EOF; i++) {
-                if(isAddress) memory.push_back(valueRead);
-                isAddress = !isAddress;
-        }
-        
-        fclose(pmFile);
-        fclose(dmFile);
-        
-        return memory;
+    //parse the first file
+    vector<int> progMem = parseMemory(fname1);
+    //prepare the zero pad
+    int padLength = dataMemOffset - progMem.size();
+    if(padLength < 0) throw(1);
+    vector<int> zeroPad;
+    zeroPad.assign(padLength, 0);
+    //parse the second file
+    vector<int> dataMem = parseMemory(fname2);
+    
+    //stitch everything together
+    vector<int> memory;
+    memory.reserve(dataMemOffset + dataMem.size());
+    memory.insert( memory.end(), progMem.begin(), progMem.end() );
+    memory.insert( memory.end(), zeroPad.begin(), zeroPad.end() );
+    memory.insert( memory.end(), dataMem.begin(), dataMem.end() );
+    return memory;
 }
 
