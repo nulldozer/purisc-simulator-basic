@@ -3,9 +3,9 @@
 #include <vector>
 #include <stdlib.h>
 #include <getopt.h>
-#include <exception>
 #include "purisc-simulator-basic.hpp"
-
+#include <ctypes>
+#include <byteswap>
 
 using namespace std;
 
@@ -29,20 +29,27 @@ main(int argc, char** argv)
         } 
         Simulation * sim = new Simulation(m, args.execLimit);
         
-        do {
-            if(args.instAddr) cout << sim->getPC() << endl;
-            if(args.instDecoded) cout << "a:" << sim->getA()
-                                    << "\tb:" << sim->getB()
-                                    << "\tc:" << sim->getC() << endl;
-            if(args.instData) cout << "m[a]:" << sim->getDA() 
-                                << "\tm[b]:" << sim->getDB()
-                                << "\tm[c]:" << sim->getDC() << endl;
-            if(args.instWrite) cout << "addr:" << sim->getB()
-                                    << "data:" << sim->getDB() << endl;
-        } while ( sim->next() );
+        cout << "first" << endl;
+        printStuff(sim, args);
+        
+        while ( sim->next() ) {
+            cout << "loop" << endl;
+            printStuff(sim, args);
+        }
         
         delete sim;
         return 0;
+}
+void printStuff(Simulation *sim, PSBArg args){
+    if(args.instAddr) cout << sim->getPC() << endl;
+    if(args.instDecoded) cout << "a:" << sim->getA()
+                            << "\tb:" << sim->getB()
+                            << "\tc:" << sim->getC() << endl;
+    if(args.instData) cout << "m[a]:" << sim->getDA() 
+                        << "\tm[b]:" << sim->getDB()
+                        << "\tm[c]:" << sim->getDC() << endl;
+    if(args.instWrite) cout << "addr:" << sim->getB()
+                            << "data:" << sim->getDB() << endl;
 }
 
 PSBArg

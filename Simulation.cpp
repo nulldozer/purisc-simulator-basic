@@ -8,12 +8,16 @@ Simulation::Simulation(vector<int> memory, int limit)
     pc=0; 
     count=0;
     m=memory;
+    cout << "in constructor, m[0]:" << m[0] << "m[3]" << m[3] << endl << endl;
     execLimit=limit;
 }
 
 bool
 Simulation::next() 
 {
+    cout << "in function:" << endl;
+    cout << "pc:" << pc << endl;
+    cout << "a: " << a << endl;
     bool success;
     if(pc < m.size() && (count < execLimit || execLimit < 0)){
         a = m[pc+0];
@@ -27,6 +31,9 @@ Simulation::next()
         success = false;
     }
     count++;
+    cout << "before return" << endl;
+    cout << "pc:" << pc << endl;
+    cout << "a: " << a << endl;
     return success;
 }
 int Simulation::getPC() { return pc; }

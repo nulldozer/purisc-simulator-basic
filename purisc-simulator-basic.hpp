@@ -3,7 +3,7 @@
 #include "Simulation.hpp"
 
 using namespace std;
-
+/*
 class readMemoryException: public exception
 {
   virtual const char* what() const throw()
@@ -11,7 +11,7 @@ class readMemoryException: public exception
     return "";
   }
 } myex;
-
+*/
 struct PSBArg {
     bool instAddr;
     bool instDecoded;
@@ -26,6 +26,8 @@ struct PSBArg {
 
 PSBArg 
 toPSBArg (int argc, char **argv);
+
+void printStuff(Simulation*, PSBArg);
 
 vector<int>
 parseMemory(char * fname);
